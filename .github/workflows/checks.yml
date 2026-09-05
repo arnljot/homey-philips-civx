@@ -18,17 +18,35 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # Because the validator floats, the app can stop meeting the store's
+  # requirements without anyone touching this repository. A weekly run says so
+  # while there is still time to react, instead of on the day you want to
+  # publish. Only `validate` runs on this trigger — re-running deterministic
+  # checks against unchanged code proves nothing.
+  schedule:
+    - cron: '0 6 * * 1'
+
+# Both jobs only read the checkout. Anything else the default token could do is
+# authority this workflow has no use for.
+permissions:
+  contents: read
+
+# A quick follow-up push should cancel the run it supersedes.
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   tests:
     name: Offline checks
     runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
 
       # No `npm ci`: package.json declares no dependencies, and every check
       # below is plain Node against files in this repository.
@@ -58,13 +76,14 @@ jobs:
     name: Homey app validate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Pinned to the v1 commit. That does NOT pin the toolchain — the action is
       # a Dockerfile on `node:lts-alpine` whose entrypoint runs `npx homey app
       # validate`, so both Node and the CLI are whatever is current on the day.
-      # What the pin does buy is integrity of the action's own code: `master`
-      # could be edited to run something else entirely.
+      # (A run on 2026-09-05 resolved homey@4.4.4.) What the pin does buy is
+      # integrity of the action's own code: `master` could be edited to run
+      # something else entirely.
       - uses: athombv/github-action-homey-app-validate@002b7273c2b86032cb20d9bf25a67c8daca13f2c
         with:
           level: publish
