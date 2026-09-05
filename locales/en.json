@@ -1,0 +1,54 @@
+{
+  "pair": {
+    "start": {
+      "title": "Find your fan",
+      "intro": "Every Civx fan learns its own remote, so Homey has to discover which one yours answers to. It takes about two minutes.",
+      "step1": "You hold 1 and 2 on the remote, near Homey, so it can listen.",
+      "step2": "Homey then briefly runs the fan at its lowest speed a few times, and asks you whether it reacted.",
+      "watch": "Stand where you can see the fan before continuing, and make sure it is switched off to begin with.",
+      "note": "Your existing remote keeps working — nothing is re-paired or overwritten."
+    },
+    "listen": {
+      "title": "Hold 1 and 2",
+      "instruction": "Hold the 1 and 2 buttons on your remote together, close to Homey, until this fills up.",
+      "framesHeard": "signals heard",
+      "narrowed": "Narrowed to {{count}} possible fans.",
+      "timeout": "Homey did not hear the remote. Move closer to Homey, hold 1 and 2 together for a few seconds, and try again.",
+      "waiting": "Listening — hold 1 and 2 now",
+      "hearing": "Hearing your remote…",
+      "got": "Got it"
+    },
+    "probe": {
+      "title": "Which fan is yours?",
+      "intro": "Homey sends to many possible fans at once and then asks whether your light changed. That is why about nine questions is enough instead of 189.",
+      "begin": "Start",
+      "yes": "Yes",
+      "no": "No",
+      "settling": "Waiting for the blades to stop…",
+      "stopping": "Stopping the fan…",
+      "deviceName": "Philips Civx Ceiling Fan",
+      "noneLeft": "No candidate matched. The fan may have been out of range, or an answer may have been the wrong way round. Please start again.",
+      "lightOff": "Switch the light off with your remote first, and stand where you can see it.",
+      "useFan": "The light does not work - use the fan instead",
+      "q_light_on": "Is the light on now?",
+      "q_light_off": "Is the light off now?",
+      "q_fan_on": "Is the fan running now?",
+      "q_fan_off": "Is the fan stopped now?",
+      "step": "Question {{round}} of about {{rounds}}",
+      "stepConfirm": "Last question - confirming",
+      "finishing": "Finishing up…",
+      "starting": "Starting…",
+      "working": "Working…",
+      "nextAddresses": "Trying the other half…",
+      "foundAdding": "Found it — adding the fan…",
+      "halfNo": "About half the answers will be \"no\". That is normal.",
+      "sweep_light_on": "Switching the light on in {{total}} possible fans…",
+      "sweep_light_off": "Switching the light off in {{total}} possible fans…",
+      "sweep_fan_on": "Starting {{total}} possible fans…",
+      "sweep_fan_off": "Stopping {{total}} possible fans…",
+      "stepWorking": "Step {{round}} of about {{rounds}}",
+      "alreadyPaired": "This fan is already added to Homey — you can close this window.",
+      "lightName": "Philips Civx Ceiling Light"
+    }
+  }
+}

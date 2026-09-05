@@ -1,0 +1,54 @@
+{
+  "pair": {
+    "start": {
+      "title": "Finn viften din",
+      "intro": "Hver Civx-vifte lærer sin egen fjernkontroll, så Homey må finne ut hvilken din svarer på. Det tar omtrent to minutter.",
+      "step1": "Du holder 1 og 2 på fjernkontrollen, nær Homey, så den kan lytte.",
+      "step2": "Homey kjører så viften kort på laveste hastighet noen ganger, og spør deg om den reagerte.",
+      "watch": "Still deg der du ser viften før du fortsetter, og sørg for at den er avslått til å begynne med.",
+      "note": "Fjernkontrollen din fortsetter å virke — ingenting paires på nytt eller overskrives."
+    },
+    "listen": {
+      "title": "Hold 1 og 2",
+      "instruction": "Hold 1 og 2 på fjernkontrollen samtidig, nær Homey, til denne fylles opp.",
+      "framesHeard": "signaler hørt",
+      "narrowed": "Innsnevret til {{count}} mulige vifter.",
+      "timeout": "Homey hørte ikke fjernkontrollen. Gå nærmere Homey, hold 1 og 2 samtidig i noen sekunder, og prøv igjen.",
+      "waiting": "Lytter — hold 1 og 2 nå",
+      "hearing": "Hører fjernkontrollen din…",
+      "got": "Fikk den"
+    },
+    "probe": {
+      "title": "Hvilken vifte er din?",
+      "intro": "Homey sender til mange mulige vifter om gangen, og spør så om lyset ditt endret seg. Derfor holder det med rundt ni spørsmål i stedet for 189.",
+      "begin": "Start",
+      "yes": "Ja",
+      "no": "Nei",
+      "settling": "Venter til bladene har stanset…",
+      "stopping": "Stopper viften…",
+      "deviceName": "Philips Civx takvifte",
+      "noneLeft": "Ingen kandidat traff. Viften kan ha vært utenfor rekkevidde, eller et svar kan ha vært feil vei. Start på nytt.",
+      "lightOff": "Slå lyset av med fjernkontrollen først, og still deg der du ser lampen.",
+      "useFan": "Lyset virker ikke — bruk viften i stedet",
+      "q_light_on": "Lyser lampen nå?",
+      "q_light_off": "Er lampen slukket nå?",
+      "q_fan_on": "Går viften nå?",
+      "q_fan_off": "Står viften stille nå?",
+      "step": "Spørsmål {{round}} av omtrent {{rounds}}",
+      "stepConfirm": "Siste spørsmål — bekrefter",
+      "finishing": "Avslutter…",
+      "starting": "Starter…",
+      "working": "Jobber…",
+      "nextAddresses": "Prøver den andre halvdelen…",
+      "foundAdding": "Fant den — legger til viften…",
+      "halfNo": "Omtrent halvparten av svarene blir «nei». Det er normalt.",
+      "sweep_light_on": "Slår på lyset i {{total}} mulige vifter…",
+      "sweep_light_off": "Slår av lyset i {{total}} mulige vifter…",
+      "sweep_fan_on": "Starter {{total}} mulige vifter…",
+      "sweep_fan_off": "Stopper {{total}} mulige vifter…",
+      "stepWorking": "Steg {{round}} av omtrent {{rounds}}",
+      "alreadyPaired": "Denne viften er allerede lagt til i Homey — du kan lukke dette vinduet.",
+      "lightName": "Philips Civx taklampe"
+    }
+  }
+}

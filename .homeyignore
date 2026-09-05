@@ -1,0 +1,14 @@
+# Reference material and reverse-engineering inputs — not part of the app bundle.
+#
+# This exists for a concrete reason: with the manuals and product images bundled
+# the archive was 60 MB and `homey app install` died on a 300 s upload timeout.
+# Excluded, it is a few hundred KB and installs in seconds.
+local/
+captures/
+tools/
+docs/
+*.zip
+*.pdf
+*.webp
+*.sub
+

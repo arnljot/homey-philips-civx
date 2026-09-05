@@ -1,0 +1,184 @@
+{
+  "product": "Philips Civx Fan Ceiling Light (Signify 10057403)",
+  "note": "Derived from the Flipper Zero captures in captures/. The address is learned per unit; the button ids are not.",
+  "frequency_hz": 433920000,
+  "modulation": "OOK",
+  "preset": "FuriHalSubGhzPresetOok650Async",
+  "repetitions": 5,
+  "frame_length_bits": 41,
+  "timing_us": {
+    "sync": [
+      7370,
+      1090
+    ],
+    "bit0": [
+      340,
+      720
+    ],
+    "bit1": [
+      720,
+      330
+    ]
+  },
+  "frame": {
+    "address_bits": [
+      0,
+      23
+    ],
+    "id_bits": [
+      24,
+      31
+    ],
+    "check_bits": [
+      32,
+      39
+    ],
+    "trailer_bit": 40,
+    "check": "id XOR 0xEB",
+    "check_xor": "0xEB"
+  },
+  "reference_address_bits": "001010111100110100001101",
+  "reference_address_hex": "0x2BCD0D",
+  "codes": {
+    "speed_1": {
+      "label": "Speed 1",
+      "id": "0x41",
+      "bits": "00101011110011010000110101000001101010100",
+      "hex": "0x579A1A8354",
+      "capture": "captures/civx_fan_1.sub"
+    },
+    "speed_2": {
+      "label": "Speed 2",
+      "id": "0xAD",
+      "bits": "00101011110011010000110110101101010001100",
+      "hex": "0x579A1B5A8C",
+      "capture": "captures/civx_fan_2.sub"
+    },
+    "speed_3": {
+      "label": "Speed 3",
+      "id": "0x9E",
+      "bits": "00101011110011010000110110011110011101010",
+      "hex": "0x579A1B3CEA",
+      "capture": "captures/civx_fan_3.sub"
+    },
+    "speed_4": {
+      "label": "Speed 4",
+      "id": "0x23",
+      "bits": "00101011110011010000110100100011110010000",
+      "hex": "0x579A1A4790",
+      "capture": "captures/civx_fan_4.sub"
+    },
+    "speed_5": {
+      "label": "Speed 5",
+      "id": "0x80",
+      "bits": "00101011110011010000110110000000011010110",
+      "hex": "0x579A1B00D6",
+      "capture": "captures/civx_fan_5.sub"
+    },
+    "speed_6": {
+      "label": "Speed 6",
+      "id": "0x8D",
+      "bits": "00101011110011010000110110001101011001100",
+      "hex": "0x579A1B1ACC",
+      "capture": "captures/civx_fan_6.sub"
+    },
+    "off": {
+      "label": "Fan off (centre button)",
+      "id": "0x13",
+      "bits": "00101011110011010000110100010011111110000",
+      "hex": "0x579A1A27F0",
+      "capture": "captures/civx_fan_stop.sub"
+    },
+    "pairing": {
+      "label": "Pairing (hold 1 + 2)",
+      "id": "0x62",
+      "bits": "00101011110011010000110101100010100010010",
+      "hex": "0x579A1AC512",
+      "capture": "captures/civx_hold_1_2.sub"
+    },
+    "light_on": {
+      "label": "Light ON",
+      "id": "0x7E",
+      "bits": "00101011110011010000110101111110100101010",
+      "hex": "0x579A1AFD2A",
+      "capture": "captures/civx_light_on.sub"
+    },
+    "light_off": {
+      "label": "Light OFF",
+      "id": "0xBC",
+      "bits": "00101011110011010000110110111100010101110",
+      "hex": "0x579A1B78AE",
+      "capture": "captures/civx_light_off.sub"
+    },
+    "white_ww": {
+      "label": "Warm white (3000 K)",
+      "id": "0x6F",
+      "bits": "00101011110011010000110101101111100001000",
+      "hex": "0x579A1ADF08",
+      "capture": "captures/civx_ww.sub"
+    },
+    "white_nw": {
+      "label": "Natural white (4300 K)",
+      "id": "0x66",
+      "bits": "00101011110011010000110101100110100011010",
+      "hex": "0x579A1ACD1A",
+      "capture": "captures/civx_nw.sub"
+    },
+    "white_dw": {
+      "label": "Day white (6500 K)",
+      "id": "0x85",
+      "bits": "00101011110011010000110110000101011011100",
+      "hex": "0x579A1B0ADC",
+      "capture": "captures/civx_dw.sub"
+    },
+    "dim_up": {
+      "label": "Brightness +",
+      "id": "0x73",
+      "bits": "00101011110011010000110101110011100110000",
+      "hex": "0x579A1AE730",
+      "capture": "captures/civx_dim_up.sub"
+    },
+    "dim_down": {
+      "label": "Brightness -",
+      "id": "0x29",
+      "bits": "00101011110011010000110100101001110000100",
+      "hex": "0x579A1A5384",
+      "capture": "captures/civx_dim_down.sub"
+    },
+    "reverse": {
+      "label": "Forward/Reverse",
+      "id": "0x50",
+      "bits": "00101011110011010000110101010000101110110",
+      "hex": "0x579A1AA176",
+      "capture": "captures/civx_fan_reverse.sub"
+    },
+    "sleep_wind": {
+      "label": "Sleep Wind",
+      "id": "0x32",
+      "bits": "00101011110011010000110100110010110110010",
+      "hex": "0x579A1A65B2",
+      "capture": "captures/civx_moon.sub"
+    },
+    "timer_1h": {
+      "label": "Fan timer 1h",
+      "id": "0x1D",
+      "bits": "00101011110011010000110100011101111101100",
+      "hex": "0x579A1A3BEC",
+      "capture": "captures/civx_1h.sub"
+    },
+    "timer_3h": {
+      "label": "Fan timer 3h",
+      "id": "0x18",
+      "bits": "00101011110011010000110100011000111100110",
+      "hex": "0x579A1A31E6",
+      "capture": "captures/civx_3h.sub"
+    },
+    "timer_6h": {
+      "label": "Fan timer 6h",
+      "id": "0x17",
+      "bits": "00101011110011010000110100010111111111000",
+      "hex": "0x579A1A2FF8",
+      "capture": "captures/civx_6h.sub"
+    }
+  }
+}

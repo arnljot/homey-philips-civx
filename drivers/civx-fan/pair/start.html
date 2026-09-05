@@ -1,0 +1,35 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<style>
+  .wrap { padding: 1.2em 1em; line-height: 1.45; }
+  ol { padding-left: 1.2em; margin: 1em 0; }
+  li { margin-bottom: .5em; }
+  .muted { opacity: .65; font-size: .85em; margin-top: 1.2em; }
+</style>
+
+<div class="wrap">
+  <div class="homey-header">
+    <h1 class="homey-title" data-i18n="pair.start.title">Find your fan</h1>
+    <p class="homey-subtitle" data-i18n="pair.start.intro">
+      Every Civx fan learns its own remote, so Homey has to discover which one
+      yours answers to. It takes about two minutes.
+    </p>
+  </div>
+
+  <ol>
+    <li data-i18n="pair.start.step1">You hold 1 and 2 on the remote, near Homey, so it can listen.</li>
+    <li data-i18n="pair.start.step2">Homey then briefly runs the fan at its lowest speed, and asks whether it reacted.</li>
+  </ol>
+
+  <p data-i18n="pair.start.watch">
+    Stand where you can see the fan, and make sure it is switched off to begin with.
+  </p>
+
+  <p class="muted" data-i18n="pair.start.note">
+    Your existing remote keeps working — nothing is re-paired or overwritten.
+  </p>
+</div>
+
+<!-- No script: this view only explains the process. Homey supplies the
+     "Continue" button from the `navigation` entry in app.json.
+     Homey.showNextButton() does not exist in a pairing view here. -->
+

@@ -1,0 +1,81 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<style>
+  .wrap { padding: 1.2em 1em; text-align: center; }
+  .big { font-size: 2.6em; font-weight: 600; margin: .5em 0 0; line-height: 1; }
+  .muted { opacity: .65; font-size: .85em; }
+  .hidden { display: none; }
+  .bar { height: 6px; border-radius: 3px; background: rgba(128,128,128,.2);
+         margin: 1.2em auto .5em; max-width: 260px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: #1BA3E5; transition: width .3s; }
+  .err { color: #b00; margin-top: 1em; word-break: break-word; }
+</style>
+
+<div class="wrap">
+  <div class="homey-header">
+    <h1 class="homey-title" data-i18n="pair.listen.title">Hold 1 and 2</h1>
+    <p class="homey-subtitle" data-i18n="pair.listen.instruction">
+      Hold the 1 and 2 buttons on your remote together, close to Homey, until this fills up.
+    </p>
+  </div>
+
+  <div class="big" id="count">0</div>
+  <div class="muted" data-i18n="pair.listen.framesHeard">signals heard</div>
+  <div class="bar"><i id="bar"></i></div>
+
+  <p class="muted" id="status">&nbsp;</p>
+  <p class="err" id="error"></p>
+</div>
+
+<!-- Strings the script swaps in, kept in the markup with data-i18n so Homey
+     translates them; the script only reads their text back. -->
+<div class="hidden" id="strings">
+  <span id="s_waiting" data-i18n="pair.listen.waiting">Listening — hold 1 and 2 now</span>
+  <span id="s_hearing" data-i18n="pair.listen.hearing">Hearing your remote…</span>
+  <span id="s_got" data-i18n="pair.listen.got">Got it</span>
+  <span id="s_timeout" data-i18n="pair.listen.timeout">Homey did not hear the remote.</span>
+</div>
+
+<script type="application/javascript">
+  // A custom pairing view is given `Homey` directly — do NOT include
+  // /homey.js here. It replaces the real API with an asset loader, and the page
+  // then renders perfectly while doing nothing at all. tools/check_views.js
+  // fails the build if it reappears.
+  (function () {
+    var NEEDED = 12;
+    var el = function (id) { return document.getElementById(id); };
+    var txt = function (id, s) { try { el(id).textContent = s; } catch (e) {} };
+    var S = function (id) { try { return el(id).textContent.trim(); } catch (e) { return ''; } };
+    var fail = function (e) { txt('error', (e && e.message) ? e.message : String(e)); };
+    var moved = false;
+
+    var render = function (s) {
+      if (!s || moved) return;
+      var n = s.frames || 0;
+      txt('count', n);
+      try { el('bar').style.width = Math.min(100, Math.round(n / NEEDED * 100)) + '%'; } catch (e) {}
+      if (s.phase === 'error') { fail(s.message || S('s_timeout')); return; }
+      if (s.phase === 'done') {
+        moved = true;
+        try { el('bar').style.width = '100%'; } catch (e) {}
+        txt('status', S('s_got'));
+        setTimeout(function () { Homey.showView('probe'); }, 700);
+        return;
+      }
+      txt('status', n > 0 ? S('s_hearing') : S('s_waiting'));
+    };
+
+    Homey.on('listen_progress', function (d) { render({ phase: 'listening', frames: d && d.frames }); return true; });
+    Homey.on('listen_done', function (d) { render({ phase: 'done', candidates: d && d.candidates, frames: NEEDED }); return true; });
+    Homey.on('listen_error', function (d) { render({ phase: 'error', message: d && d.message }); return true; });
+
+    // The poll is what the page renders from; the pushes above only make the
+    // counter feel live.
+    setInterval(function () {
+      Homey.emit('listen_poll', {}).then(render).catch(function () {});
+    }, 400);
+
+    txt('status', S('s_waiting'));
+    Homey.emit('listen_start', { from: 'view' }).catch(fail);
+  }());
+</script>
+

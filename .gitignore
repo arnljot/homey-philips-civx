@@ -1,0 +1,41 @@
+# NOTE: git has no inline comments. A comment after a pattern on the same line
+# becomes part of the pattern, and the rule then matches nothing.
+
+# Homey: build output from `homey app build/install`, and packed archives
+.homeybuild/
+*.tar.gz
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Local-only reference material: manuals, product photos, anything that informs
+# the work rather than being part of it. Bundling the PDFs once pushed the app
+# archive to 60 MB and `homey app install` died on the upload timeout, so this
+# directory is excluded from the app bundle too — see .homeyignore.
+local/
+
+# Claude Code — personal/local artifacts, never committed.
+# CLAUDE.md is deliberately NOT here: it is the project's shared context file,
+# carrying findings the code cannot state on its own — the protocol, the
+# hardware measurements, and the mistakes not worth repeating.
+.claude/
+.devcontainer/claude-memory/
+CLAUDE.local.md
+.claude.json
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editors
+.vscode/
+.idea/
+*.swp

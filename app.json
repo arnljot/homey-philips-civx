@@ -1,0 +1,943 @@
+{
+  "id": "no.interlope.philipscivx",
+  "version": "2.9.0",
+  "compatibility": ">=5.0.0",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Philips Civx Ceiling Fan",
+    "no": "Philips Civx takvifte"
+  },
+  "description": {
+    "en": "Control a Philips Civx LED ceiling fan over 433 MHz using Homey Pro's built-in radio, by replaying the original remote's codes.",
+    "no": "Styr en Philips Civx LED-takvifte over 433 MHz med Homey Pro sin innebygde radio, ved a spille av kodene fra originalfjernkontrollen."
+  },
+  "category": [
+    "appliances"
+  ],
+  "brandColor": "#0B5FA5",
+  "permissions": [
+    "homey:wireless:433"
+  ],
+  "author": {
+    "name": "Arnljot",
+    "email": "arnljot@interlope-consulting.no"
+  },
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "signals": {
+    "433": {
+      "philips_civx_fan": {
+        "sof": [
+          7370,
+          1090
+        ],
+        "eof": [],
+        "words": [
+          [
+            340,
+            720
+          ],
+          [
+            720,
+            330
+          ]
+        ],
+        "interval": 5,
+        "sensitivity": 0.5,
+        "repetitions": 5,
+        "minimalLength": 41,
+        "maximalLength": 41
+      },
+      "philips_civx_fan_eof": {
+        "sof": [
+          7370,
+          1090
+        ],
+        "eof": [
+          340
+        ],
+        "words": [
+          [
+            340,
+            720
+          ],
+          [
+            720,
+            330
+          ]
+        ],
+        "interval": 380,
+        "sensitivity": 0.5,
+        "repetitions": 5,
+        "minimalLength": 41,
+        "maximalLength": 41,
+        "txOnly": true
+      },
+      "civx_ctl": {
+        "words": [
+          [
+            339,
+            722
+          ],
+          [
+            729,
+            328
+          ]
+        ],
+        "sensitivity": 0.5,
+        "repetitions": 5,
+        "minimalLength": 4,
+        "maximalLength": 250
+      }
+    }
+  },
+  "capabilities": {
+    "civx_speed": {
+      "type": "enum",
+      "title": {
+        "en": "Speed",
+        "no": "Hastighet"
+      },
+      "desc": {
+        "en": "A six-segment bar showing fan speed: all segments empty when off, filling left to right for speeds 1-6. Follows both Homey and the physical remote. Pick this as the device's status indicator.",
+        "no": "En sekssegments stolpe som viser viftehastighet: alle segmenter tomme nar den er av, fylles fra venstre mot hoyre for hastighet 1-6. Folger bade Homey og den fysiske fjernkontrollen. Velg denne som statusindikator."
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "icon": "/assets/icon.svg",
+      "values": [
+        {
+          "id": "off",
+          "title": {
+            "en": "[░░░░░░]",
+            "no": "[░░░░░░]"
+          }
+        },
+        {
+          "id": "1",
+          "title": {
+            "en": "[█░░░░░]",
+            "no": "[█░░░░░]"
+          }
+        },
+        {
+          "id": "2",
+          "title": {
+            "en": "[██░░░░]",
+            "no": "[██░░░░]"
+          }
+        },
+        {
+          "id": "3",
+          "title": {
+            "en": "[███░░░]",
+            "no": "[███░░░]"
+          }
+        },
+        {
+          "id": "4",
+          "title": {
+            "en": "[████░░]",
+            "no": "[████░░]"
+          }
+        },
+        {
+          "id": "5",
+          "title": {
+            "en": "[█████░]",
+            "no": "[█████░]"
+          }
+        },
+        {
+          "id": "6",
+          "title": {
+            "en": "[██████]",
+            "no": "[██████]"
+          }
+        }
+      ]
+    },
+    "civx_speed_1": {
+      "type": "boolean",
+      "title": {
+        "en": "Speed 1",
+        "no": "Hastighet 1"
+      },
+      "desc": {
+        "en": "Run the fan at speed step 1. Highlighted when this is the speed Homey last sent.",
+        "no": "Kjor viften pa hastighetstrinn 1. Uthevet nar dette er hastigheten Homey sist sendte."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_speed_2": {
+      "type": "boolean",
+      "title": {
+        "en": "Speed 2",
+        "no": "Hastighet 2"
+      },
+      "desc": {
+        "en": "Run the fan at speed step 2. Highlighted when this is the speed Homey last sent.",
+        "no": "Kjor viften pa hastighetstrinn 2. Uthevet nar dette er hastigheten Homey sist sendte."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_speed_3": {
+      "type": "boolean",
+      "title": {
+        "en": "Speed 3",
+        "no": "Hastighet 3"
+      },
+      "desc": {
+        "en": "Run the fan at speed step 3. Highlighted when this is the speed Homey last sent.",
+        "no": "Kjor viften pa hastighetstrinn 3. Uthevet nar dette er hastigheten Homey sist sendte."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_speed_4": {
+      "type": "boolean",
+      "title": {
+        "en": "Speed 4",
+        "no": "Hastighet 4"
+      },
+      "desc": {
+        "en": "Run the fan at speed step 4. Highlighted when this is the speed Homey last sent.",
+        "no": "Kjor viften pa hastighetstrinn 4. Uthevet nar dette er hastigheten Homey sist sendte."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_speed_5": {
+      "type": "boolean",
+      "title": {
+        "en": "Speed 5",
+        "no": "Hastighet 5"
+      },
+      "desc": {
+        "en": "Run the fan at speed step 5. Highlighted when this is the speed Homey last sent.",
+        "no": "Kjor viften pa hastighetstrinn 5. Uthevet nar dette er hastigheten Homey sist sendte."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_speed_6": {
+      "type": "boolean",
+      "title": {
+        "en": "Speed 6",
+        "no": "Hastighet 6"
+      },
+      "desc": {
+        "en": "Run the fan at speed step 6. Highlighted when this is the speed Homey last sent.",
+        "no": "Kjor viften pa hastighetstrinn 6. Uthevet nar dette er hastigheten Homey sist sendte."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_white_ww": {
+      "type": "boolean",
+      "title": {
+        "en": "Warm white",
+        "no": "Varmhvit"
+      },
+      "desc": {
+        "en": "Set the light to warm white (3000 K). Highlighted when this is the shade Homey last sent.",
+        "no": "Sett lyset til varmhvit (3000 K). Uthevet nar dette er nyansen Homey sist sendte."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_white_nw": {
+      "type": "boolean",
+      "title": {
+        "en": "Natural white",
+        "no": "Naturhvit"
+      },
+      "desc": {
+        "en": "Set the light to natural white (4300 K). Highlighted when this is the shade Homey last sent.",
+        "no": "Sett lyset til naturhvit (4300 K). Uthevet nar dette er nyansen Homey sist sendte."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_white_dw": {
+      "type": "boolean",
+      "title": {
+        "en": "Day white",
+        "no": "Dagslyshvit"
+      },
+      "desc": {
+        "en": "Set the light to day white (6500 K). Highlighted when this is the shade Homey last sent.",
+        "no": "Sett lyset til dagslyshvit (6500 K). Uthevet nar dette er nyansen Homey sist sendte."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_dim_up": {
+      "type": "boolean",
+      "title": {
+        "en": "Brighter",
+        "no": "Lysere"
+      },
+      "desc": {
+        "en": "One brightness step up, as on the remote. The remote has no absolute level.",
+        "no": "Ett lysstyrketrinn opp, som pa fjernkontrollen. Fjernkontrollen har ingen absolutt verdi."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_dim_down": {
+      "type": "boolean",
+      "title": {
+        "en": "Dimmer",
+        "no": "Morkere"
+      },
+      "desc": {
+        "en": "One brightness step down, as on the remote. The remote has no absolute level.",
+        "no": "Ett lysstyrketrinn ned, som pa fjernkontrollen. Fjernkontrollen har ingen absolutt verdi."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_reverse": {
+      "type": "boolean",
+      "title": {
+        "en": "Reverse",
+        "no": "Snu retning"
+      },
+      "desc": {
+        "en": "Reverse the airflow direction. The fan does not report which way it turns.",
+        "no": "Snu luftretningen. Viften rapporterer ikke hvilken vei den gar."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_sleep": {
+      "type": "boolean",
+      "title": {
+        "en": "Sleep wind",
+        "no": "Sovevind"
+      },
+      "desc": {
+        "en": "Sleep Wind. Named but never described in the manual.",
+        "no": "Sovevind. Navngitt, men aldri beskrevet i manualen."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_timer_1h": {
+      "type": "boolean",
+      "title": {
+        "en": "Timer 1h",
+        "no": "Timer 1t"
+      },
+      "desc": {
+        "en": "Run the fan for 1 hour, then stop.",
+        "no": "Kjor viften i 1 time, og stopp."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_timer_3h": {
+      "type": "boolean",
+      "title": {
+        "en": "Timer 3h",
+        "no": "Timer 3t"
+      },
+      "desc": {
+        "en": "Run the fan for 3 hours, then stop.",
+        "no": "Kjor viften i 3 timer, og stopp."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    },
+    "civx_timer_6h": {
+      "type": "boolean",
+      "title": {
+        "en": "Timer 6h",
+        "no": "Timer 6t"
+      },
+      "desc": {
+        "en": "Run the fan for 6 hours, then stop.",
+        "no": "Kjor viften i 6 timer, og stopp."
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button"
+    }
+  },
+  "drivers": [
+    {
+      "id": "civx-fan",
+      "name": {
+        "en": "Philips Civx Ceiling Fan",
+        "no": "Philips Civx takvifte"
+      },
+      "class": "fan",
+      "capabilities": [
+        "onoff",
+        "civx_speed",
+        "civx_speed_1",
+        "civx_speed_2",
+        "civx_speed_3",
+        "civx_speed_4",
+        "civx_speed_5",
+        "civx_speed_6",
+        "civx_reverse",
+        "civx_sleep",
+        "civx_timer_1h",
+        "civx_timer_3h",
+        "civx_timer_6h"
+      ],
+      "capabilitiesOptions": {
+        "onoff": {
+          "title": {
+            "en": "Power",
+            "no": "Av/pa"
+          }
+        }
+      },
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "rf433"
+      ],
+      "images": {
+        "small": "/drivers/civx-fan/assets/images/small.png",
+        "large": "/drivers/civx-fan/assets/images/large.png",
+        "xlarge": "/drivers/civx-fan/assets/images/xlarge.png"
+      },
+      "pair": [
+        {
+          "id": "start",
+          "navigation": {
+            "next": "listen"
+          }
+        },
+        {
+          "id": "listen"
+        },
+        {
+          "id": "probe"
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "About",
+            "no": "Om"
+          },
+          "children": [
+            {
+              "id": "app_version",
+              "type": "label",
+              "label": {
+                "en": "App version",
+                "no": "App-versjon"
+              },
+              "hint": {
+                "en": "The version actually running on this Homey. Set by the app itself when it starts, so it confirms an install has taken effect rather than repeating what app.json claims.",
+                "no": "Versjonen som faktisk kjorer pa denne Homey-en. Settes av appen selv nar den starter, sa den bekrefter at en installasjon har tatt effekt i stedet for a gjenta det app.json pastar."
+              },
+              "value": "unknown"
+            },
+            {
+              "id": "app_started",
+              "type": "label",
+              "label": {
+                "en": "Running since",
+                "no": "Kjort siden"
+              },
+              "hint": {
+                "en": "When this version last started. A recent time means the install has just gone live.",
+                "no": "Nar denne versjonen sist startet. Et nylig tidspunkt betyr at installasjonen nettopp ble aktiv."
+              },
+              "value": "unknown"
+            },
+            {
+              "id": "fan_address",
+              "type": "label",
+              "label": {
+                "en": "Fan address",
+                "no": "Vifteadresse"
+              },
+              "hint": {
+                "en": "The 24-bit address this fan answers to, discovered during pairing. Every Civx learns its own remote, so this differs per fan.",
+                "no": "Den 24-bits adressen denne viften svarer pa, funnet under paring. Hver Civx laerer sin egen fjernkontroll, sa denne er ulik per vifte."
+              },
+              "value": "unknown"
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "label": {
+            "en": "Radio",
+            "no": "Radio"
+          },
+          "children": [
+            {
+              "id": "repetitions",
+              "type": "number",
+              "label": {
+                "en": "Repetitions per press",
+                "no": "Gjentakelser per trykk"
+              },
+              "hint": {
+                "en": "How many times each code is transmitted. The original remote sends 5. Raise this if the fan is far from Homey and misses commands.",
+                "no": "Hvor mange ganger hver kode sendes. Originalfjernkontrollen sender 5. Ok denne hvis viften star langt fra Homey og mister kommandoer."
+              },
+              "value": 8,
+              "min": 1,
+              "max": 60
+            },
+            {
+              "id": "signal_variant",
+              "type": "dropdown",
+              "label": {
+                "en": "Signal timing variant",
+                "no": "Signaltiming-variant"
+              },
+              "hint": {
+                "en": "Frame shape. 'Capture-exact' matches the recorded remote byte-for-byte. Switch to 'Trailing pulse' only if the fan does not react at all.",
+                "no": "Rammeform. 'Capture-exact' matcher opptaket av fjernkontrollen eksakt. Bytt til 'Trailing pulse' bare hvis viften ikke reagerer i det hele tatt."
+              },
+              "value": "default",
+              "values": [
+                {
+                  "id": "default",
+                  "label": {
+                    "en": "Capture-exact (no trailing pulse)",
+                    "no": "Capture-exact (uten sluttpuls)"
+                  }
+                },
+                {
+                  "id": "eof",
+                  "label": {
+                    "en": "Trailing pulse (Homey convention)",
+                    "no": "Sluttpuls (Homey-konvensjon)"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "label": {
+            "en": "Power button behaviour",
+            "no": "Oppforsel for av/pa-knappen"
+          },
+          "children": [
+            {
+              "id": "onoff_speed",
+              "type": "dropdown",
+              "label": {
+                "en": "Speed used when turned on",
+                "no": "Hastighet som brukes ved paslag"
+              },
+              "hint": {
+                "en": "Which speed step On selects when Homey has no previous speed stored.",
+                "no": "Hvilket hastighetstrinn Pa velger nar Homey ikke har lagret en tidligere hastighet."
+              },
+              "value": "3",
+              "values": [
+                {
+                  "id": "1",
+                  "label": {
+                    "en": "1",
+                    "no": "1"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": {
+                    "en": "2",
+                    "no": "2"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": {
+                    "en": "3",
+                    "no": "3"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": {
+                    "en": "4",
+                    "no": "4"
+                  }
+                },
+                {
+                  "id": "5",
+                  "label": {
+                    "en": "5",
+                    "no": "5"
+                  }
+                },
+                {
+                  "id": "6",
+                  "label": {
+                    "en": "6",
+                    "no": "6"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "label": {
+            "en": "Remote tracking",
+            "no": "Sporing av fjernkontroll"
+          },
+          "children": [
+            {
+              "id": "track_remote",
+              "type": "checkbox",
+              "label": {
+                "en": "Follow the physical remote",
+                "no": "Folg den fysiske fjernkontrollen"
+              },
+              "hint": {
+                "en": "Homey listens on 433 MHz for the original remote and updates this device to match what the remote told the fan to do. Turn off if it causes false readings.",
+                "no": "Homey lytter pa 433 MHz etter originalfjernkontrollen og oppdaterer denne enheten til a matche det fjernkontrollen ba viften om. Skru av hvis det gir feil avlesninger."
+              },
+              "value": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "flow": {
+    "actions": [
+      {
+        "id": "set_speed",
+        "title": {
+          "en": "Set the fan speed",
+          "no": "Sett viftehastigheten"
+        },
+        "titleFormatted": {
+          "en": "Set the fan speed to [[speed]]",
+          "no": "Sett viftehastigheten til [[speed]]"
+        },
+        "hint": {
+          "en": "Selects a speed step directly, exactly like pressing 1-6 on the remote. This also turns the fan on.",
+          "no": "Velger et hastighetstrinn direkte, akkurat som a trykke 1-6 pa fjernkontrollen. Dette slar ogsa pa viften."
+        },
+        "args": [
+          {
+            "name": "device",
+            "type": "device",
+            "filter": "driver_id=civx-fan"
+          },
+          {
+            "name": "speed",
+            "type": "dropdown",
+            "values": [
+              {
+                "id": "1",
+                "label": {
+                  "en": "1 - lowest",
+                  "no": "1 - lavest"
+                }
+              },
+              {
+                "id": "2",
+                "label": {
+                  "en": "2",
+                  "no": "2"
+                }
+              },
+              {
+                "id": "3",
+                "label": {
+                  "en": "3",
+                  "no": "3"
+                }
+              },
+              {
+                "id": "4",
+                "label": {
+                  "en": "4",
+                  "no": "4"
+                }
+              },
+              {
+                "id": "5",
+                "label": {
+                  "en": "5",
+                  "no": "5"
+                }
+              },
+              {
+                "id": "6",
+                "label": {
+                  "en": "6 - highest",
+                  "no": "6 - hoyest"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "send_raw_code",
+        "title": {
+          "en": "Send a remote button code",
+          "no": "Send en fjernkontrollknapp-kode"
+        },
+        "titleFormatted": {
+          "en": "Send remote button [[button]] (track state: [[update_state]])",
+          "no": "Send fjernkontrollknapp [[button]] (spor tilstand: [[update_state]])"
+        },
+        "hint": {
+          "en": "Transmits any of the 19 captured button codes. With \"Update the device state\" ticked, Homey also tracks what the button does, so its tiles stay in step; untick it to transmit without touching state, which is what range testing wants.",
+          "no": "Sender en av de 19 opptatte knappekodene. Med \"Oppdater enhetstilstanden\" avkrysset foelger Homey ogsaa med paa hva knappen gjoer, saa flisene holder seg i takt; fjern avkryssingen for aa sende uten aa roere tilstanden, som er det rekkeviddetesting vil ha."
+        },
+        "args": [
+          {
+            "name": "device",
+            "type": "device",
+            "filter": "driver_id=civx-fan"
+          },
+          {
+            "name": "button",
+            "type": "dropdown",
+            "values": [
+              {
+                "id": "speed_1",
+                "label": {
+                  "en": "Speed 1",
+                  "no": "Hastighet 1"
+                }
+              },
+              {
+                "id": "speed_2",
+                "label": {
+                  "en": "Speed 2",
+                  "no": "Hastighet 2"
+                }
+              },
+              {
+                "id": "speed_3",
+                "label": {
+                  "en": "Speed 3",
+                  "no": "Hastighet 3"
+                }
+              },
+              {
+                "id": "speed_4",
+                "label": {
+                  "en": "Speed 4",
+                  "no": "Hastighet 4"
+                }
+              },
+              {
+                "id": "speed_5",
+                "label": {
+                  "en": "Speed 5",
+                  "no": "Hastighet 5"
+                }
+              },
+              {
+                "id": "speed_6",
+                "label": {
+                  "en": "Speed 6",
+                  "no": "Hastighet 6"
+                }
+              },
+              {
+                "id": "off",
+                "label": {
+                  "en": "Fan off",
+                  "no": "Vifte av"
+                }
+              },
+              {
+                "id": "reverse",
+                "label": {
+                  "en": "Reverse direction",
+                  "no": "Snu retning"
+                }
+              },
+              {
+                "id": "sleep_wind",
+                "label": {
+                  "en": "Sleep wind",
+                  "no": "Sovevind"
+                }
+              },
+              {
+                "id": "timer_1h",
+                "label": {
+                  "en": "Timer 1 hour",
+                  "no": "Timer 1 time"
+                }
+              },
+              {
+                "id": "timer_3h",
+                "label": {
+                  "en": "Timer 3 hours",
+                  "no": "Timer 3 timer"
+                }
+              },
+              {
+                "id": "timer_6h",
+                "label": {
+                  "en": "Timer 6 hours",
+                  "no": "Timer 6 timer"
+                }
+              },
+              {
+                "id": "light_on",
+                "label": {
+                  "en": "Light on",
+                  "no": "Lys pa"
+                }
+              },
+              {
+                "id": "light_off",
+                "label": {
+                  "en": "Light off",
+                  "no": "Lys av"
+                }
+              },
+              {
+                "id": "white_ww",
+                "label": {
+                  "en": "Warm white",
+                  "no": "Varmhvit"
+                }
+              },
+              {
+                "id": "white_nw",
+                "label": {
+                  "en": "Natural white",
+                  "no": "Naturhvit"
+                }
+              },
+              {
+                "id": "white_dw",
+                "label": {
+                  "en": "Day white",
+                  "no": "Dagslyshvit"
+                }
+              },
+              {
+                "id": "dim_up",
+                "label": {
+                  "en": "Brighter",
+                  "no": "Lysere"
+                }
+              },
+              {
+                "id": "dim_down",
+                "label": {
+                  "en": "Dimmer",
+                  "no": "Morkere"
+                }
+              }
+            ]
+          },
+          {
+            "name": "update_state",
+            "type": "checkbox",
+            "value": true,
+            "title": {
+              "en": "Update the device state",
+              "no": "Oppdater enhetstilstanden"
+            }
+          }
+        ]
+      }
+    ],
+    "triggers": [
+      {
+        "id": "remote_button",
+        "title": {
+          "en": "The physical remote was used",
+          "no": "Den fysiske fjernkontrollen ble brukt"
+        },
+        "titleFormatted": {
+          "en": "The physical remote was used",
+          "no": "Den fysiske fjernkontrollen ble brukt"
+        },
+        "hint": {
+          "en": "Fires when Homey overhears a button press on the original Philips remote. Also useful for confirming that 433 MHz reception works at all.",
+          "no": "Utloses nar Homey horer et knappetrykk pa den originale Philips-fjernkontrollen. Ogsa nyttig for a bekrefte at 433 MHz-mottak fungerer i det hele tatt."
+        },
+        "args": [
+          {
+            "name": "device",
+            "type": "device",
+            "filter": "driver_id=civx-fan"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "button",
+            "type": "string",
+            "title": {
+              "en": "Button",
+              "no": "Knapp"
+            },
+            "example": {
+              "en": "Speed 3"
+            }
+          },
+          {
+            "name": "speed",
+            "type": "number",
+            "title": {
+              "en": "Speed",
+              "no": "Hastighet"
+            },
+            "example": 3
+          }
+        ]
+      }
+    ]
+  }
+}
+

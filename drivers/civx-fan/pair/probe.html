@@ -1,0 +1,232 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<style>
+  .wrap { padding: 1.2em 1em; }
+  .center { text-align: center; }
+  .muted { opacity: .65; font-size: .85em; }
+  .spacer { height: 1em; }
+  .rule { height: 1px; background: rgba(128,128,128,.2); margin: 2em 0 1.2em; }
+  .bar { height: 6px; border-radius: 3px; background: rgba(128,128,128,.2);
+         margin: 1.1em auto .4em; max-width: 260px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: #1BA3E5; transition: width .25s linear; }
+  .err { color: #b00; margin-top: 1em; word-break: break-word; }
+  .hidden { display: none; }
+  .row { display: flex; gap: .7em; margin-top: 1.4em; }
+  .row > button { flex: 1; }
+  #useFan { width: 100%; }
+
+  /* Only for the case where Homey's own stylesheet is not injected into the
+     view; a plain <button> renders grey with black text. Enabled from script,
+     so Homey's styling always wins when present. */
+  body.no-homey-css .homey-button-primary-full,
+  body.no-homey-css .homey-button-secondary-shadow {
+    display: block; width: 100%; padding: .85em 1em; border: 0;
+    border-radius: 8px; font-size: 1em; font-weight: 600; cursor: pointer;
+  }
+  body.no-homey-css .homey-button-primary-full { background: #1BA3E5; color: #fff; }
+  body.no-homey-css .homey-button-secondary-shadow {
+    background: rgba(128,128,128,.14); color: inherit;
+    box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  }
+</style>
+
+<div class="wrap">
+  <div class="homey-header">
+    <h1 class="homey-title" data-i18n="pair.probe.title">Which fan is yours?</h1>
+  </div>
+
+  <div id="intro">
+    <p class="homey-subtitle" data-i18n="pair.probe.intro">
+      Homey sends to many possible fans at once and then asks whether your light
+      changed. That is why about nine questions is enough instead of 189.
+    </p>
+    <p class="muted" data-i18n="pair.probe.lightOff">
+      Switch the light off with your remote first, and stand where you can see it.
+    </p>
+    <div class="spacer"></div>
+    <button class="homey-button-primary-full" id="begin" data-i18n="pair.probe.begin">Start</button>
+    <div class="rule"></div>
+    <button class="homey-button-secondary-shadow" id="useFan" data-i18n="pair.probe.useFan">
+      The light does not work — use the fan instead
+    </button>
+  </div>
+
+  <div id="asking" class="hidden">
+    <p class="homey-subtitle center" id="question">&nbsp;</p>
+    <p class="muted center" id="progress"></p>
+    <div class="row">
+      <button class="homey-button-primary-full" id="yes" data-i18n="pair.probe.yes">Yes</button>
+      <button class="homey-button-secondary-shadow" id="no" data-i18n="pair.probe.no">No</button>
+    </div>
+    <p class="muted center" data-i18n="pair.probe.halfNo">
+      About half the answers will be "no". That is normal.
+    </p>
+  </div>
+
+  <div id="working" class="hidden center">
+    <p class="homey-subtitle" id="workingSub">&nbsp;</p>
+    <div class="bar"><i id="bar"></i></div>
+    <p class="muted" id="workingStep">&nbsp;</p>
+  </div>
+
+  <p class="err" id="error"></p>
+</div>
+
+<!-- Strings the script swaps in at runtime. They live in the markup with a
+     data-i18n attribute so Homey translates them the normal way; the script
+     only reads their text back. Building them in JavaScript would ship English
+     to every language. -->
+<div class="hidden" id="strings">
+  <span id="s_light_on" data-i18n="pair.probe.q_light_on">Is the light on now?</span>
+  <span id="s_light_off" data-i18n="pair.probe.q_light_off">Is the light off now?</span>
+  <span id="s_fan_on" data-i18n="pair.probe.q_fan_on">Is the fan running now?</span>
+  <span id="s_fan_off" data-i18n="pair.probe.q_fan_off">Is the fan stopped now?</span>
+  <span id="s_starting" data-i18n="pair.probe.starting">Starting…</span>
+  <span id="s_working" data-i18n="pair.probe.working">Working…</span>
+  <span id="s_next" data-i18n="pair.probe.nextAddresses">Trying the other half…</span>
+  <span id="s_adding" data-i18n="pair.probe.foundAdding">Found it — adding the fan…</span>
+  <span id="s_failed" data-i18n="pair.probe.noneLeft">No candidate matched.</span>
+  <span id="s_exists" data-i18n="pair.probe.alreadyPaired">This fan is already added to Homey.</span>
+</div>
+
+<script type="application/javascript">
+  // `Homey` is provided directly; including /homey.js would replace it with an
+  // asset loader and the page would render perfectly while doing nothing.
+  //
+  // Rendered from the poll; the pushes only save up to one poll of latency.
+  (function () {
+    var el = function (id) { return document.getElementById(id); };
+    var txt = function (id, s) { try { el(id).textContent = s; } catch (e) {} };
+    // Read a translated string back out of the markup.
+    var S = function (id) { try { return el(id).textContent.trim(); } catch (e) { return ''; } };
+    var fail = function (e) { txt('error', (e && e.message) ? e.message : String(e)); };
+
+    var screen = '';
+    var show = function (id) {
+      if (screen === id) return;
+      screen = id;
+      ['intro', 'asking', 'working'].forEach(function (s) {
+        try { el(s).classList.toggle('hidden', s !== id); } catch (e) {}
+      });
+    };
+
+    // Homey's stylesheet may or may not reach a custom view. Detect it rather
+    // than guess: an unstyled button has no saturated background colour.
+    try {
+      var bg = window.getComputedStyle(el('begin')).backgroundColor || '';
+      var rgb = bg.match(/\d+/g);
+      var vivid = rgb && rgb.length >= 3
+        && Math.max(rgb[0], rgb[1], rgb[2]) - Math.min(rgb[0], rgb[1], rgb[2]) > 30;
+      if (!vivid) document.body.classList.add('no-homey-css');
+    } catch (e) { /* leave Homey's styling alone if anything is unreadable */ }
+
+    // Hand over to Homey's own add-device view, which reads the address back
+    // through the driver's list_devices handler. Homey.createDevice() from a
+    // custom page does not finish.
+    var handing = false;
+    var handOver = function () {
+      if (handing) return;
+      handing = true;
+      show('working');
+      txt('workingSub', S('s_adding'));
+      txt('workingStep', ' ');
+      try { el('bar').style.width = '100%'; } catch (e) {}
+      setTimeout(function () {
+        try { Homey.showView('list_devices'); } catch (e) { fail(e); }
+      }, 400);
+    };
+
+    // Set while an answer is in flight, or the next poll — still reporting the
+    // old 'ask' — puts the question straight back on screen.
+    var answered = false;
+    var returning = false;
+
+    var render = function (s) {
+      if (!s) return;
+      if (s.phase !== 'ask') answered = false;
+      if (s.phase === 'found' && s.address) return handOver();
+      if (s.phase === 'exists') {
+        // Homey's device list hides anything already paired, so handing it this
+        // address would render "no new devices have been found".
+        txt('workingSub', s.message || S('s_exists'));
+        txt('workingStep', ' ');
+        try { el('bar').style.width = '100%'; } catch (e) {}
+        show('working');
+        return;
+      }
+      if (s.phase === 'failed') {
+        // Back to the listening step, not to this page's Start button: the
+        // candidate list has just been shown not to contain the fan.
+        fail(s.message || S('s_failed'));
+        show('intro');
+        if (!returning) {
+          returning = true;
+          setTimeout(function () {
+            try { Homey.showView('listen'); } catch (e) { fail(e); }
+          }, 3500);
+        }
+        return;
+      }
+      if (s.phase === 'ask') {
+        if (answered) return;
+        // The question asks about a STATE, not an event: the light may have
+        // changed halfway through the batch, where nobody was watching.
+        txt('question', S('s_' + (s.medium || 'light') + '_' + (s.expect || 'on')));
+        txt('progress', s.step || '');
+        show('asking');
+        return;
+      }
+      if (s.phase === 'working') {
+        txt('workingSub', s.message || S('s_working'));
+        txt('workingStep', s.step || ' ');
+        try { el('bar').style.width = (s.pct || 0) + '%'; } catch (e) {}
+        show('working');
+      }
+    };
+
+    // Pushes: applied immediately, in the same shape the poll returns.
+    Homey.on('probe_working', function (d) {
+      render({ phase: 'working', message: d && d.text, pct: d && d.pct, step: d && d.step });
+      return true;
+    });
+    Homey.on('probe_ask', function (d) {
+      if (!d) return true;
+      var m = {};
+      for (var k in d) if (Object.prototype.hasOwnProperty.call(d, k)) m[k] = d[k];
+      m.phase = 'ask';
+      render(m);
+      return true;
+    });
+    Homey.on('probe_found', function () { handOver(); return true; });
+    Homey.on('probe_exists', function (d) {
+      render({ phase: 'exists', message: d && d.message });
+      return true;
+    });
+    Homey.on('probe_failed', function (d) { render({ phase: 'failed', message: d && d.message }); return true; });
+
+    setInterval(function () {
+      Homey.emit('probe_poll', {}).then(render).catch(function () {});
+    }, 400);
+
+    var begin = function (medium) {
+      show('working');
+      txt('workingSub', S('s_starting'));
+      txt('workingStep', ' ');
+      Homey.emit('probe_start', { medium: medium }).catch(fail);
+    };
+    el('begin').onclick = function () { begin('light'); };
+    el('useFan').onclick = function () { begin('fan'); };
+
+    var reply = function (reacted, label) {
+      if (answered) return;
+      answered = true;
+      show('working');
+      txt('workingSub', label);
+      try { el('bar').style.width = '0%'; } catch (e) {}
+      Homey.emit('probe_answer', { reacted: reacted }).catch(fail);
+    };
+    el('yes').onclick = function () { reply(true, S('s_working')); };
+    el('no').onclick = function () { reply(false, S('s_next')); };
+  }());
+</script>
+
+
