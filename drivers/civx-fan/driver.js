@@ -2,11 +2,17 @@
 'use strict';
 
 const Homey = require('homey');
-const { matchButton, nearestCode } = require('../../lib/codes');
+const { matcherFor } = require('../../lib/codes');
 const {
-  candidateAddresses, modalFrame, frameForId, BUTTON_IDS,
+  candidateAddresses, modalFrame, frameForId, frameStringFor, BUTTON_IDS,
   PROBE_BUTTONS, PROBE_BUTTONS_FAN,
 } = require('../../lib/pairing');
+
+// The buttons reception can identify. Deliberately the fan set only: adding the
+// light codes drops the closest distance between distorted codes from 3 bits to
+// 2, below what the 1-bit matching tolerance needs to stay unambiguous
+// (`node tools/check_light_codes.js`).
+const RX_BUTTONS = ['speed_1', 'speed_2', 'speed_3', 'speed_4', 'speed_5', 'speed_6', 'off'];
 
 // Reception. Frames arrive NOT correctly decoded — Homey cannot resolve this
 // remote's PWM — and are identified by their distorted form, see `distort()` in
@@ -88,9 +94,50 @@ module.exports = class CivxFanDriver extends Homey.Driver {
     return this.homey.rf.getSignal433(TX_SIGNAL_ID);
   }
 
+  /**
+   * Serialise every transmission in the app onto one queue.
+   *
+   * The queue belongs here, not on the device: a fan and a light are two
+   * devices sharing one radio and one address, so a per-device chain lets two
+   * bursts overlap and garble each other on air.
+   *
+   * @param {function(): Promise<void>} send
+   */
+  async enqueueTx(send) {
+    const next = (this._txChain || Promise.resolve()).then(send);
+    this._txChain = next.catch(() => {});   // a failure must not break the queue
+    return next;
+  }
+
   /** Called around our own transmissions to avoid self-triggering. */
   muteRx(durationMs) {
     this._muteUntil = Math.max(this._muteUntil, Date.now() + durationMs + TX_ECHO_GUARD_MS);
+  }
+
+  /**
+   * A matcher per paired address.
+   *
+   * Reception has to be built from the addresses actually in use: a matcher
+   * made from the reference remote's captured codes recognises the reference
+   * remote and nothing else, which would leave remote tracking dead for every
+   * other owner. The distortion is deterministic, so the received form of an
+   * address can be predicted without ever having heard it.
+   *
+   * Rebuilt whenever the set of paired addresses changes.
+   */
+  _matchers() {
+    const addresses = [...new Set(this.getDevices().map((d) => d.address()))].sort();
+    const key = addresses.join(',');
+    if (this._matcherKey === key) return this._matcherCache;
+
+    this._matcherCache = addresses.map((address) => {
+      const frames = {};
+      for (const button of RX_BUTTONS) frames[button] = frameStringFor(address, BUTTON_IDS[button]);
+      return { address, matcher: matcherFor(frames) };
+    });
+    this._matcherKey = key;
+    this.log(`RX matching ${addresses.length} address(es): ${key || '(none paired)'}`);
+    return this._matcherCache;
   }
 
   async _onPayload(payload, first, signalId) {
@@ -108,21 +155,30 @@ module.exports = class CivxFanDriver extends Homey.Driver {
 
     // Not restricted to `first`: alignment varies between repetitions, so a
     // later one often decodes more cleanly. The burst guard collapses them.
-    const button = matchButton(payload);
-    if (!button) return;
+    let hit = null;
+    for (const entry of this._matchers()) {
+      const button = entry.matcher.matchButton(payload);
+      if (button) { hit = { ...entry, button }; break; }
+    }
+    if (!hit) return;
 
-    if (button === this._lastSeen.button && now - this._lastSeen.at < BURST_MS) {
+    // Keyed by address as well as button: two fans in one house are two
+    // independent remotes, and a press of one must not mute the other.
+    const seenKey = `${hit.address}:${hit.button}`;
+    if (seenKey === this._lastSeen.key && now - this._lastSeen.at < BURST_MS) {
       this._lastSeen.at = now;
       return;
     }
-    this._lastSeen = { button, at: now };
+    this._lastSeen = { key: seenKey, at: now };
 
-    const near = nearestCode(payload);
-    this.log(`remote: ${button} (${signalId}, ${near.distance} bit error(s), first=${first})`);
+    const near = hit.matcher.nearestCode(payload);
+    this.log(`remote: ${hit.button} (${signalId}, ${near ? near.distance : '?'} bit error(s),`
+      + ` first=${first}, address ${hit.address})`);
 
     for (const device of this.getDevices()) {
+      if (device.address() !== hit.address) continue;
       if (device.getSetting('track_remote') === false) continue;
-      await device.onRemoteButton(button).catch(this.error);
+      await device.onRemoteButton(hit.button).catch(this.error);
     }
   }
 
@@ -181,6 +237,9 @@ module.exports = class CivxFanDriver extends Homey.Driver {
       // Probing runs detached from any handler, so without this an abandoned
       // session keeps transmitting.
       cancelled: false,
+      // Set while a detached probe step is running, so a double tap cannot
+      // start a second one over the top of it.
+      working: false,
     };
 
     // Never two live sessions at once: an abandoned one whose `disconnect` never
@@ -453,7 +512,21 @@ module.exports = class CivxFanDriver extends Homey.Driver {
 
     // Same rule as listen_start: a batch takes seconds, and anything emitted
     // from a still-running handler is queued behind it. Return immediately.
-    const detach = (fn) => { this.homey.setTimeout(() => fn().catch(this.error), 0); return true; };
+    // Run the work off the handler, and NEVER two at once. The view guards
+    // double taps of its own, but the driver must not depend on that: two
+    // `answer()` calls interleaved both mutate the candidate list, and a
+    // halving search sent down the wrong branch cannot recover.
+    const detach = (fn) => {
+      if (state.working) {
+        this.log('pairing: ignoring an overlapping request, one is already running');
+        return true;
+      }
+      state.working = true;
+      this.homey.setTimeout(() => {
+        fn().catch(this.error).then(() => { state.working = false; });
+      }, 0);
+      return true;
+    };
 
     // The first question assumes the light starts OFF; the intro asks the user
     // to arrange that with their own remote, rather than Homey spending a full
@@ -542,5 +615,6 @@ module.exports = class CivxFanDriver extends Homey.Driver {
   }
 
 };
+
 
 

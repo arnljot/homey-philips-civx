@@ -227,6 +227,13 @@ sequences. **Never accept a model tested on its own training data.**
   cross-contaminate.
 - Most frames in a burst are too corrupted to identify and are **rejected, not
   guessed**. Only the clean ones count; 4-8 per burst match exactly.
+- **Matching is per ADDRESS, built at runtime.** The captured codes all carry
+  the reference remote's address, so matching against them alone would leave
+  remote tracking dead for every other owner. `matcherFor()` in `lib/codes.js`
+  builds a matcher for any address — the distortion is deterministic, so the
+  received form of an address can be predicted without ever hearing it. The
+  driver keeps one per paired address and dispatches only to the devices on the
+  address that matched.
 - **Only the 7 fan buttons are matched.** Adding the light codes drops the
   closest distorted pair from 3 bits to 2 (`speed_3` vs `light_off`), below what
   tolerance 1 needs. Checked by `node tools/check_light_codes.js`.
@@ -365,7 +372,7 @@ never reaches the view. Long work is detached onto the next tick; a session that
 is abandoned mid-probe keeps transmitting unless it is cancelled explicitly.
 
 ## Tests
-- `node tools/rxtest.js .` — 54 offline checks, no hardware. Stubs the `homey`
+- `node tools/rxtest.js .` — 59 offline checks, no hardware. Stubs the `homey`
   module and drives the real driver and device classes: burst de-dup, the
   dedicated-off semantics, bit-error tolerance, self-echo muting, foreign 433
   traffic, the `track_remote` opt-out, capability migration and ordering, the
@@ -433,6 +440,7 @@ define one, so the declaration lives in `package.json` and `LICENSE` only.
   Flow action fires a code without changing device state, so it can be looped.
 - Naming history: earlier drafts said "pergola", then "Olas". It is **Civx**.
   The working directory name still carries the old label; nothing else does.
+
 
 
 

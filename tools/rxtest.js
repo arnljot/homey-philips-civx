@@ -437,9 +437,86 @@ function check(label, actual, expected) {
   await dev.pressButton('not_a_button', true).catch((e) => { threw = e.message; });
   check('an unknown button is rejected, not transmitted', threw, 'Unknown button: not_a_button');
 
+  // --- reception is per ADDRESS, not per capture -----------------------------
+  //
+  // The captured codes all carry the reference remote's address. Matching
+  // against them alone would leave remote tracking dead for every other owner,
+  // so the driver builds a matcher per paired address. These checks are the
+  // ones that would have caught that.
+  const { frameStringFor, BUTTON_IDS: IDS } = require(path.join(ROOT, 'lib/pairing.js'));
+  const { distort: mangle } = require(path.join(ROOT, 'lib/codes.js'));
+
+  const SECOND = '110100100011010110100010';       // a plausible second unit
+  const d2 = makeDriver();
+  await d2.onInit();
+  const mine = makeDevice(d2, {}, { id: 'civx-other', address: SECOND, role: 'fan' });
+  d2._devices.push(mine);
+  await mine.onInit();
+
+  const heard = (address, button) => mangle(frameStringFor(address, IDS[button]).split('').map(Number))
+    .split('').map(Number);
+
+  signalHandler(heard(SECOND, 'speed_4'), true);
+  await settle();
+  check('a fan on its own address tracks its own remote', lit(mine),
+    'onoff=true lit=[4] speed=4 last=4');
+
+  signalHandler(heard(FRAMES.speed_3.join('').slice(0, 24), 'speed_2'), true);
+  await settle();
+  check('and ignores a different unit\'s remote on the same 433 band', lit(mine),
+    'onoff=true lit=[4] speed=4 last=4');
+
+  // --- one radio, one queue --------------------------------------------------
+  //
+  // A fan and a light are two devices sharing one transmitter. Serialising per
+  // device would let two bursts overlap on air.
+  const lamp2 = makeDevice(d2, {}, { id: 'civx-other-light', address: SECOND, role: 'light' });
+  d2._devices.push(lamp2);
+  await lamp2.onInit();
+
+  let inFlight = 0;
+  let overlapped = false;
+  const realSignal = mine.homey.rf.getSignal433;
+  for (const dev of [mine, lamp2]) {
+    dev.homey.rf.getSignal433 = () => ({
+      tx: async () => {
+        inFlight += 1;
+        if (inFlight > 1) overlapped = true;
+        await new Promise((r) => setTimeout(r, 20));
+        inFlight -= 1;
+      },
+    });
+  }
+  await Promise.all([mine.sendButton('speed_1'), lamp2.sendButton('light_on')]);
+  check('transmissions from both devices are serialised on one queue',
+    `overlapped=${overlapped}`, 'overlapped=false');
+  for (const dev of [mine, lamp2]) dev.homey.rf.getSignal433 = realSignal;
+
+  // --- the repetitions default must not drift from the manifest --------------
+  const manifest = require(path.join(ROOT, 'app.json'));
+  const flat = (list) => list.flatMap((e) => (e.children ? flat(e.children) : [e]));
+  const repSetting = flat(manifest.drivers.find((d) => d.id === 'civx-fan').settings)
+    .find((e) => e.id === 'repetitions');
+  const bare = makeDevice(driver, { repetitions: undefined });
+  await bare.onInit();
+  txLog.length = 0;
+  await bare.sendButton('speed_1');
+  await settle();
+  check('the repetitions fallback equals the manifest default',
+    String(txLog[0].reps), String(repSetting.value));
+
+  // --- an overheard button the device cannot track is refused, not parsed ----
+  txLog.length = 0;
+  const beforeSpeed = dev._store.speed;
+  await dev.onRemoteButton('light_on');
+  await settle();
+  check('an untrackable overheard button leaves the speed alone',
+    String(dev._store.speed), String(beforeSpeed));
+
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nAll checks passed.');
   process.exit(failures ? 1 : 0);
 })();
+
 
 
 

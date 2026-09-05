@@ -24,6 +24,10 @@ const FRAME_MS = 52;
 // post-listener capability write rather than being overwritten by it.
 const REPAINT_DELAY_MS = 250;
 
+// Used only when the setting is missing or nonsense. Must equal the manifest's
+// default for `repetitions`, which `tools/rxtest.js` asserts.
+const DEFAULT_REPETITIONS = 8;
+
 // Fire-and-forget buttons: none of these has a readable state — the fan never
 // says which way it is turning — so they light on press and clear again.
 const MOMENTARY = {
@@ -75,15 +79,12 @@ module.exports = class CivxFanDevice extends Homey.Device {
    * `fan` or `light`. Devices paired before the light existed carry no role and
    * are fans — the same reasoning as the address fallback below.
    */
-  _role() {
+  role() {
     return CAPABILITIES_BY_ROLE[this.getData().role] ? this.getData().role : 'fan';
   }
 
   async onInit() {
-    // Transmissions are serialised: two overlapping tx calls would garble the air.
-    this._txChain = Promise.resolve();
-
-    const role = this._role();
+    const role = this.role();
     // A manifest declares one class per driver, and both devices come from this
     // one, so the light corrects its own. Guarded: without the class the light
     // still works, it just does not answer to "all lights off".
@@ -135,6 +136,19 @@ module.exports = class CivxFanDevice extends Homey.Device {
       + ` | civx_speed=${JSON.stringify(this.getCapabilityValue('civx_speed'))}`
       + ` | onoff=${JSON.stringify(this.getCapabilityValue('onoff'))}`
       + ` | caps=[${this.getCapabilities().join(',')}]`);
+  }
+
+  /**
+   * Both repaint timers outlive the device otherwise: deleting a device within
+   * REPAINT_DELAY_MS of a press leaves a callback writing to a torn-down
+   * device. Homey clears timers when the app stops, not when a device goes.
+   */
+  async onDeleted() {
+    if (this._repaint) this.homey.clearTimeout(this._repaint);
+    if (this._repaintWhite) this.homey.clearTimeout(this._repaintWhite);
+    this._repaint = null;
+    this._repaintWhite = null;
+    this.log(`${this.role()} on ${this.address()} deleted`);
   }
 
   /**
@@ -197,7 +211,7 @@ module.exports = class CivxFanDevice extends Homey.Device {
     // insert, and Homey presents a device from its capability order, so one
     // added late can fail to surface even with the right value. Rebuild from
     // the first position that differs; _reflect() restores the values.
-    const wanted = CAPABILITIES_BY_ROLE[this._role()];
+    const wanted = CAPABILITIES_BY_ROLE[this.role()];
     const current = this.getCapabilities();
     let i = 0;
     while (i < wanted.length && i < current.length && current[i] === wanted[i]) i++;
@@ -223,8 +237,16 @@ module.exports = class CivxFanDevice extends Homey.Device {
    * stale one. `setSettings()` does not re-trigger `onSettings`.
    */
   async _showVersion() {
-    const started = new Date().toLocaleString('nb-NO', {
-      timeZone: 'Europe/Oslo',
+    // The Homey's own timezone and language, not the author's. Both calls are
+    // guarded because a stale SDK or a test stub may not offer them, and a
+    // timestamp is not worth failing onInit over.
+    let timeZone;
+    let locale;
+    try { timeZone = this.homey.clock.getTimezone(); } catch (err) { timeZone = undefined; }
+    try { locale = this.homey.i18n.getLanguage(); } catch (err) { locale = undefined; }
+
+    const started = new Date().toLocaleString(locale || 'en-GB', {
+      timeZone: timeZone || 'UTC',
       dateStyle: 'short',
       timeStyle: 'medium',
     });
@@ -232,9 +254,9 @@ module.exports = class CivxFanDevice extends Homey.Device {
       app_version: String(this.homey.manifest.version),
       app_started: started,
       // So the address pairing found can be checked, not taken on trust.
-      fan_address: this._address(),
+      fan_address: this.address(),
     }).catch(this.error);
-    this.log(`v${this.homey.manifest.version} started ${started}, address ${this._address()}`);
+    this.log(`v${this.homey.manifest.version} started ${started}, address ${this.address()}`);
   }
 
   /** The Signal433 selected by the "Signal timing variant" setting. */
@@ -276,8 +298,13 @@ module.exports = class CivxFanDevice extends Homey.Device {
    */
   async _set(capability, value) {
     if (this.getCapabilityValue(capability) === value) return false;
-    await this.setCapabilityValue(capability, value).catch(this.error);
-    return true;
+    try {
+      await this.setCapabilityValue(capability, value);
+      return true;
+    } catch (err) {
+      this.error(`could not write ${capability}:`, err);
+      return false;
+    }
   }
 
   /**
@@ -306,13 +333,22 @@ module.exports = class CivxFanDevice extends Homey.Device {
    */
   async onRemoteButton(button) {
     // RX identifies the seven fan buttons only, so the light tracks nothing.
-    if (this._role() === 'light') return;
+    if (this.role() === 'light') return;
+
+    // Validated rather than assumed. Widening the receive matcher is discussed
+    // in CLAUDE.md, and without this an unexpected name would parse to NaN and
+    // be written into the store as the speed.
+    const speed = button === 'off' ? 0 : Number(String(button).slice('speed_'.length));
+    if (!SPEEDS.includes(speed) && speed !== 0) {
+      this.error(`ignoring an overheard button this device cannot track: ${button}`);
+      return;
+    }
 
     const before = this.getStoreValue('speed') || 0;
 
     // The centre button is a dedicated Fan Off, not a toggle: pressing it on a
     // stopped fan leaves it stopped.
-    await this._setState(button === 'off' ? 0 : Number(button.slice('speed_'.length)));
+    await this._setState(speed);
 
     const after = this.getStoreValue('speed') || 0;
     this.log(`remote ${button}: speed ${before} -> ${after}`);
@@ -366,13 +402,13 @@ module.exports = class CivxFanDevice extends Homey.Device {
    * The address this fan answers to, found during pairing and stored on the
    * device. Devices paired before that existed fall back to the reference one.
    */
-  _address() {
+  address() {
     return this.getData().address || REFERENCE_ADDRESS;
   }
 
   /** Whether this device's role is the one that owns a button's state. */
   _ownsButton(button) {
-    if (this._role() === 'light') {
+    if (this.role() === 'light') {
       return button === 'light_on' || button === 'light_off'
         || Object.values(WHITES).includes(button);
     }
@@ -381,11 +417,11 @@ module.exports = class CivxFanDevice extends Homey.Device {
 
   /** The other half of this unit: same address, the other role. */
   _sibling() {
-    const address = this._address();
+    const address = this.address();
     return this.driver.getDevices().find((d) => d !== this
-      && typeof d._address === 'function'
-      && d._address() === address
-      && d._role() !== this._role());
+      && typeof d.address === 'function'
+      && d.address() === address
+      && d.role() !== this.role());
   }
 
   /**
@@ -395,7 +431,7 @@ module.exports = class CivxFanDevice extends Homey.Device {
    * is the sibling's.
    */
   async _applyState(button) {
-    if (this._role() === 'light') {
+    if (this.role() === 'light') {
       if (button === 'light_on' || button === 'light_off') {
         return this._set('onoff', button === 'light_on');
       }
@@ -424,7 +460,7 @@ module.exports = class CivxFanDevice extends Homey.Device {
     if (!track) return this.sendButton(button);
 
     if (this._ownsButton(button)) {
-      if (this._role() === 'light') {
+      if (this.role() === 'light') {
         if (button === 'light_on' || button === 'light_off') {
           return this.setLight(button === 'light_on');
         }
@@ -460,12 +496,16 @@ module.exports = class CivxFanDevice extends Homey.Device {
   async sendButton(button) {
     const id = BUTTON_IDS[button];
     if (id === undefined) throw new Error(`Unknown button: ${button}`);
-    const frame = frameForId(this._address(), id);
+    const frame = frameForId(this.address(), id);
 
-    const repetitions = this.getSetting('repetitions') || 5;
+    const configured = Number(this.getSetting('repetitions'));
+    const repetitions = Number.isFinite(configured) && configured > 0
+      ? configured
+      : DEFAULT_REPETITIONS;
 
-    // Queue behind any in-flight transmission, and keep the chain alive on failure.
-    const send = this._txChain.then(async () => {
+    // Queued on the DRIVER, not this device: a fan and a light are two devices
+    // sharing one radio, so a per-device chain would let two bursts overlap.
+    return this.driver.enqueueTx(async () => {
       // Deafen the receiver for the burst, so the driver does not read our own
       // transmission as a remote press. Muted here rather than at call time
       // because this may have waited in the queue.
@@ -474,11 +514,10 @@ module.exports = class CivxFanDevice extends Homey.Device {
       await this._signal().tx(frame, { repetitions });
       this.driver.muteRx(0); // extend the guard past the end of the burst
     });
-    this._txChain = send.catch(() => {});
-    await send;
   }
 
 };
+
 
 
 

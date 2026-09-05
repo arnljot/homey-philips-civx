@@ -1,0 +1,45 @@
+# Every check in this repository runs without a Homey and without the fan, so
+# there is no reason for them to run only on the author's machine.
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Driver and device behaviour
+        run: node tools/rxtest.js .
+
+      - name: Pairing search
+        run: node tools/pairtest.js .
+
+      - name: Captured codes against the frame structure
+        run: node tools/check_codes.js
+
+      - name: Why the light codes stay out of the receive matcher
+        run: node tools/check_light_codes.js
+
+      - name: Pairing views and locale keys
+        run: node tools/check_views.js
+
+      - name: Symbol timings still derive from the captures
+        run: node tools/timing_stats.js captures
+
+      - name: Decode every capture
+        run: python tools/decode_sub.py captures
+
+      - name: Homey app validates at publish level
+        run: |
+          npm install -g homey
+          homey app validate --level publish

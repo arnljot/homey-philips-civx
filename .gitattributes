@@ -1,0 +1,13 @@
+# Normalise line endings in the repository, so a checkout on Windows and one on
+# Linux produce the same blobs. Without this, git warns on every `add` and the
+# first commit from another platform looks like it rewrote every file.
+* text=auto eol=lf
+
+# Flipper Zero captures are the irreplaceable source material. They are text,
+# but treat them as opaque: nothing should ever rewrite a byte of them.
+*.sub -text
+
+# Binary
+*.png binary
+*.webp binary
+*.pdf binary

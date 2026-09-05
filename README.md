@@ -202,7 +202,7 @@ the same on every unit: capturing them once covers every owner.
 ## Tests
 
 ```sh
-node tools/rxtest.js .       # 54 checks, no hardware
+node tools/rxtest.js .       # 59 checks, no hardware
 node tools/pairtest.js .     # 22 checks against a simulated fan
 node tools/check_codes.js    # captures vs. the frame structure
 node tools/check_views.js    # pairing views and locale keys
@@ -245,7 +245,9 @@ with this project.
 - **State is inferred, never measured.** The fan never reports back. Homey knows
   what it transmitted, and what it overheard the remote transmit — it cannot see
   the fan being switched off at the wall.
-- **Only fan buttons are tracked.** Reception identifies the seven fan codes.
+- **Only fan buttons are tracked.** Reception identifies the seven fan codes,
+  built at runtime for your own fan's address rather than the one these
+  captures came from.
   The light codes are deliberately excluded: adding them would put two distorted
   codes within 2 bits of each other, below the margin the matcher needs to stay
   unambiguous. So the light device shows what Homey last sent, and does not
@@ -266,6 +268,8 @@ with this project.
   captured remote ends each frame on a space. `Capture-exact` follows the
   recording; `Trailing pulse` follows Homey's convention. Capture-exact is the
   default because it is what was proven to work.
+
+
 
 
 
