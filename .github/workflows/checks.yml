@@ -1,5 +1,16 @@
-# Every check in this repository runs without a Homey and without the fan, so
-# there is no reason for them to run only on the author's machine.
+# Two jobs, deliberately independent.
+#
+# `tests` is ours and fully deterministic: the app declares no dependencies, so
+# there is no install step and nothing to resolve from a registry. If it goes
+# red, we broke something.
+#
+# `validate` runs Athom's own validator, and it floats by design. The store
+# rules live in the CLI, so pinning it would give a green light against last
+# year's requirements while the store rejects the app. A red `validate` with a
+# green `tests` means the requirements moved, not that we did — which is the
+# whole reason these are separate jobs rather than steps in one. Neither
+# `needs:` the other; making validate wait would hide the test result on a day
+# when Athom changed something.
 name: checks
 
 on:
@@ -9,7 +20,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  tests:
+    name: Offline checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +30,8 @@ jobs:
         with:
           node-version: '20'
 
+      # No `npm ci`: package.json declares no dependencies, and every check
+      # below is plain Node against files in this repository.
       - name: Driver and device behaviour
         run: node tools/rxtest.js .
 
@@ -33,14 +47,24 @@ jobs:
       - name: Pairing views and locale keys
         run: node tools/check_views.js
 
-      # tools/timing_stats.js and tools/decode_sub.py are deliberately NOT here.
+      # tools/timing_stats.js and tools/decode_sub.py are deliberately absent.
       # The first asserts nothing at all — it prints measured timings and always
       # exits 0. The second only checks that each capture yields a repeated
-      # 41-bit frame, never that it yields the RIGHT one, and it would drag a
+      # 41-bit frame, never that it yields the RIGHT one, and it would pull a
       # Python dependency into a Node workflow. Both are instruments for a human
-      # looking at a new capture, not checks that need re-running on every push.
+      # reading a new capture, not checks worth re-running on every push.
 
-      - name: Homey app validates at publish level
-        run: |
-          npm install -g homey
-          homey app validate --level publish
+  validate:
+    name: Homey app validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned to the v1 commit. That does NOT pin the toolchain — the action is
+      # a Dockerfile on `node:lts-alpine` whose entrypoint runs `npx homey app
+      # validate`, so both Node and the CLI are whatever is current on the day.
+      # What the pin does buy is integrity of the action's own code: `master`
+      # could be edited to run something else entirely.
+      - uses: athombv/github-action-homey-app-validate@002b7273c2b86032cb20d9bf25a67c8daca13f2c
+        with:
+          level: publish
