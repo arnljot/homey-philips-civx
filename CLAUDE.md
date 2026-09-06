@@ -371,6 +371,19 @@ so anything emitted from inside a still-running handler is queued behind it and
 never reaches the view. Long work is detached onto the next tick; a session that
 is abandoned mid-probe keeps transmitting unless it is cancelled explicitly.
 
+## Toolchain
+`.nvmrc` pins Node 24, and the CI workflow reads the version from it rather
+than repeating it. The number is not taste: the Homey CLI declares
+`engines: node >=24` from 4.4.4 onward, and on an older Node
+`npm install -g homey` does NOT fail — npm resolves to the newest version whose
+engines match and installs that instead, silently. A machine on Node 20 gets
+CLI 4.0.5 and validates against older store rules than CI does, with nothing in
+either log saying they differ.
+
+The app itself has no Node requirement of its own: it runs on the Homey's
+runtime, and `package.json` declares no `engines` because the constraint
+belongs to the tooling, not the product.
+
 ## Tests
 - `node tools/rxtest.js .` — 59 offline checks, no hardware. Stubs the `homey`
   module and drives the real driver and device classes: burst de-dup, the
@@ -440,6 +453,7 @@ define one, so the declaration lives in `package.json` and `LICENSE` only.
   Flow action fires a code without changing device state, so it can be looped.
 - Naming history: earlier drafts said "pergola", then "Olas". It is **Civx**.
   The working directory name still carries the old label; nothing else does.
+
 
 
 

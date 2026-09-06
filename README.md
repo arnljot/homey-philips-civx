@@ -44,11 +44,17 @@ tolerance, and measuring the address candidate sets.
 ## Install on your own Homey Pro
 
 ```sh
+nvm use                  # Node 24, from .nvmrc
 npm install -g homey     # Homey CLI
 homey login              # interactive, opens a browser
 homey app run            # run from your PC, live logs, nothing installed
 homey app install        # install permanently onto the Homey
 ```
+
+**Use the Node in `.nvmrc`.** The Homey CLI requires Node >= 24 from 4.4.4
+onward, and on an older Node `npm install -g homey` does not fail — it quietly
+installs an older CLI. That is how a local `homey app validate` and CI's can
+disagree without either of them saying so.
 
 `homey app run` is the one to use while testing: it streams `this.log()` output
 to your terminal and stops when you press Ctrl-C.

@@ -44,9 +44,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Read from .nvmrc, so the version lives in one place and a developer
+      # running "nvm use" gets the same Node the checks run on. It says 24
+      # because the Homey CLI requires >=24 from 4.4.4 onward; on an older
+      # Node npm quietly installs an older CLI instead of failing, which is
+      # how a local validate and CI's can disagree without either saying so.
       - uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version-file: '.nvmrc'
 
       # No `npm ci`: package.json declares no dependencies, and every check
       # below is plain Node against files in this repository.
@@ -87,3 +92,4 @@ jobs:
       - uses: athombv/github-action-homey-app-validate@002b7273c2b86032cb20d9bf25a67c8daca13f2c
         with:
           level: publish
+
