@@ -84,11 +84,17 @@ jobs:
       - uses: actions/checkout@v5
 
       # Pinned to the v1 commit. That does NOT pin the toolchain — the action is
-      # a Dockerfile on `node:lts-alpine` whose entrypoint runs `npx homey app
-      # validate`, so both Node and the CLI are whatever is current on the day.
-      # (A run on 2026-09-05 resolved homey@4.4.4.) What the pin does buy is
-      # integrity of the action's own code: `master` could be edited to run
+      # a Dockerfile on `node:lts-alpine` whose entrypoint ends in `npx homey
+      # app validate`, so both Node and the CLI are whatever is current on the
+      # day. (A run on 2026-09-05 resolved homey@4.4.4.) What the pin does buy
+      # is integrity of the action's own code: `master` could be edited to run
       # something else entirely.
+      #
+      # v1's entrypoint also runs `npm ci --ignore-scripts` first, which is why
+      # this repository carries a package-lock.json despite declaring no
+      # dependencies. Without one that command fails with EUSAGE, and the job
+      # stays green only because v1's script has no `set -e`. Depending on a
+      # missing flag in someone else's 2024 shell script is not a plan.
       - uses: athombv/github-action-homey-app-validate@002b7273c2b86032cb20d9bf25a67c8daca13f2c
         with:
           level: publish
